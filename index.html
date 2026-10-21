@@ -1,31 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Linux Command Explorer · Cloud Edition</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Linux Command Explorer · Cloud Edition</title>
+<style>
+  :root{
+    --bg:#05070d; --panel:#101420; --border:#1e2a3d;
+    --accent:#4fd1ff; --accent2:#a855f7; --green:#4ade80;
+    --text:#e6edf7; --muted:#8a94a8;
+    --mono:'JetBrains Mono',Consolas,Monaco,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100%}
+  body{padding-bottom:70px;overflow-x:hidden}
+
+  /* Background (simple, no mask/blur to avoid GPU bugs) */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;
+    background:
+      radial-gradient(circle at 10% 0%, rgba(79,209,255,.12), transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(168,85,247,.12), transparent 40%),
+      linear-gradient(rgba(79,209,255,.04) 1px, transparent 1px) 0 0/48px 48px,
+      linear-gradient(90deg, rgba(79,209,255,.04) 1px, transparent 1px) 0 0/48px 48px,
+      #05070d;
+  }
+
+  /* Hero */
+  .hero{text-align:center;padding:60px 20px 20px}
+  .logo{font-family:var(--mono);font-weight:700;font-size:1rem;color:var(--muted);margin-bottom:16px;letter-spacing:.5px}
+  .logo .p{color:var(--green)}
+  .logo .a{color:var(--accent)}
+  .logo .cur{color:var(--accent);animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .hero h1{
+    font-size:clamp(1.9rem,5vw,3.4rem);font-weight:700;letter-spacing:-1px;
+    background:linear-gradient(90deg,#fff,var(--accent));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero h1 .a{-webkit-text-fill-color:var(--accent2)}
+  .subtitle{color:var(--muted);margin-top:10px;font-size:1rem}
+
+  /* Search */
+  .search-wrap{position:relative;max-width:560px;margin:28px auto 0}
+  #search{
+    width:100%;padding:15px 52px 15px 18px;background:var(--panel);
+    border:1px solid var(--border);border-radius:14px;color:var(--text);
+    font-family:var(--mono);font-size:1rem;outline:none;transition:.2s;
+  }
+  #search:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(79,209,255,.12)}
+  .kbd{
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:.8rem;color:var(--muted);
+    border:1px solid var(--border);border-radius:6px;padding:3px 8px;
+  }
+
+  /* Stats */
+  .stats{display:flex;justify-content:center;gap:36px;margin-top:28px;flex-wrap:wrap}
+  .stat{text-align:center}
+  .stat span{font-family:var(--mono);font-size:1.7rem;font-weight:700;color:var(--accent);display:block}
+  .stat small{color:var(--muted);font-size:.72rem;letter-spacing:1px;text-transform:uppercase}
+
+  /* Filters */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:26px 20px 8px;max-width:1100px;margin:0 auto}
+  .filter{
+    padding:7px 16px;border-radius:999px;cursor:pointer;background:var(--panel);
+    border:1px solid var(--border);color:var(--muted);font-family:var(--mono);
+    font-size:.82rem;transition:.2s;user-select:none;
+  }
+  .filter:hover{color:var(--text);border-color:var(--accent)}
+  .filter.active{background:var(--accent);color:#041018;font-weight:700;border-color:var(--accent)}
+
+  /* Grid */
+  .grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:16px;max-width:1200px;margin:16px auto;padding:20px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:20px;cursor:pointer;transition:.25s;position:relative;overflow:hidden;
+  }
+  .card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+  .card .name{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent);margin-bottom:6px;word-break:break-word}
+  .card .name .d{color:var(--green);margin-right:4px}
+  .card .desc{color:var(--muted);font-size:.88rem;line-height:1.5}
+  .card .tag{
+    display:inline-block;margin-top:12px;font-size:.7rem;padding:3px 9px;
+    border-radius:999px;background:rgba(168,85,247,.15);color:var(--accent2);
+    border:1px solid rgba(168,85,247,.3);font-family:var(--mono);
+    text-transform:uppercase;letter-spacing:.5px;
+  }
+  .card.cloud{border-color:rgba(168,85,247,.45)}
+  .card.cloud .name{color:var(--accent2)}
+  .card.cloud .tag{background:rgba(79,209,255,.15);color:var(--accent);border-color:rgba(79,209,255,.3)}
+
+  /* Empty */
+  .empty{text-align:center;color:var(--muted);padding:50px;font-family:var(--mono)}
+
+  /* Modal */
+  .backdrop{
+    position:fixed;inset:0;z-index:100;background:rgba(3,6,12,.85);
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .backdrop.show{display:flex}
+  .modal{
+    background:linear-gradient(160deg,#0f1420,#0a0e18);
+    border:1px solid var(--border);border-radius:18px;padding:36px;
+    max-width:700px;width:100%;max-height:85vh;overflow-y:auto;position:relative;
+    box-shadow:0 30px 80px rgba(0,0,0,.7);
+  }
+  .modal-close{
+    position:absolute;top:14px;right:14px;background:transparent;
+    border:1px solid var(--border);color:var(--muted);width:34px;height:34px;
+    border-radius:9px;cursor:pointer;font-size:1rem;transition:.2s;
+  }
+  .modal-close:hover{color:var(--accent);border-color:var(--accent)}
+  .modal h2{font-family:var(--mono);font-size:1.5rem;color:var(--accent);margin-bottom:6px;word-break:break-word}
+  .modal .meta{color:var(--accent2);font-family:var(--mono);font-size:.82rem;margin-bottom:18px}
+  .modal h3{font-size:.75rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin:22px 0 10px}
+  .modal p{color:var(--text);line-height:1.65;font-size:.92rem}
+  .modal ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+  .modal ul li{
+    background:rgba(79,209,255,.05);border:1px solid var(--border);
+    border-left:3px solid var(--accent);padding:10px 14px;border-radius:8px;
+    font-family:var(--mono);font-size:.82rem;word-break:break-word;
+  }
+  .modal .detail-list li{border-left-color:var(--accent2);font-family:var(--sans)}
+  .modal .detail-list li strong{color:var(--accent);font-family:var(--mono)}
+
+  footer{
+    position:fixed;bottom:0;left:0;right:0;text-align:center;padding:12px;
+    font-size:.78rem;color:var(--muted);background:rgba(5,7,13,.95);
+    font-family:var(--mono);border-top:1px solid var(--border);
+  }
+  @media(max-width:600px){
+    .hero{padding-top:40px}
+    .stats{gap:22px}
+    .modal{padding:26px 20px}
+  }
+</style>
 </head>
 <body>
-  <div class="bg-grid"></div>
-  <div class="glow glow-1"></div>
-  <div class="glow glow-2"></div>
-
   <header class="hero">
-    <div class="logo">
-      <span class="prompt">$</span> linux<span class="accent">::</span>cloud
-      <span class="cursor">_</span>
-    </div>
-    <h1>Linux Command <span class="accent">Explorer</span></h1>
+    <div class="logo"><span class="p">$</span> linux<span class="a">::</span>cloud <span class="cur">_</span></div>
+    <h1>Linux Command <span class="a">Explorer</span></h1>
     <p class="subtitle">Interactive reference for Linux &amp; Cloud Computing components</p>
-
     <div class="search-wrap">
-      <input id="search" type="text" placeholder="Search commands, e.g. grep, vm, hypervisor..." autocomplete="off" />
+      <input id="search" type="text" placeholder="Search commands... (press /)" autocomplete="off" />
       <span class="kbd">/</span>
     </div>
-
     <div class="stats">
       <div class="stat"><span id="statTotal">0</span><small>Commands</small></div>
       <div class="stat"><span id="statCats">0</span><small>Categories</small></div>
@@ -33,26 +157,365 @@
     </div>
   </header>
 
-  <main>
-    <nav class="filters" id="filters"></nav>
-    <section class="grid" id="grid"></section>
-    <div class="empty" id="empty" hidden>No commands match your search.</div>
-  </main>
+  <nav class="filters" id="filters"></nav>
+  <section class="grid" id="grid"></section>
+  <div class="empty" id="empty" style="display:none">No commands match your search.</div>
 
-  <!-- Modal -->
-  <div class="modal-backdrop" id="modal" hidden>
+  <div class="backdrop" id="backdrop">
     <div class="modal" role="dialog" aria-modal="true">
       <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
       <div id="modalBody"></div>
     </div>
   </div>
 
-  <footer>
-    <p>Static · Deployed via GitHub Pages · <span id="year"></span></p>
-  </footer>
+  <footer>Static · Deployed via GitHub Pages · <span id="year"></span></footer>
 
-  <script src="js/commands.js"></script>
-  <script src="js/cloud.js"></script>
-  <script src="js/app.js"></script>
+<script>
+/* ============ DATA ============ */
+const LINUX_COMMANDS = [
+  {name:"ls",category:"Files",short:"List directory contents.",
+   description:"The ls command lists files and directories. It is one of the most frequently used commands for exploring the filesystem.",
+   syntax:["ls [options] [path]","ls -la","ls -lh /var/log"],
+   details:[{flag:"-l",text:"Long format with permissions, owner, size and timestamp."},
+            {flag:"-a",text:"Include hidden files beginning with a dot."},
+            {flag:"-h",text:"Human-readable file sizes."},
+            {flag:"-R",text:"Recursively list subdirectories."}]},
+  {name:"cd",category:"Files",short:"Change the current working directory.",
+   description:"cd changes the shell's current directory. With no arguments it returns to the home directory.",
+   syntax:["cd [path]","cd /etc","cd ..","cd ~"],
+   details:[{flag:"cd ..",text:"Move up one directory level."},
+            {flag:"cd -",text:"Switch to the previous directory."},
+            {flag:"cd ~",text:"Go to the current user's home directory."}]},
+  {name:"cp",category:"Files",short:"Copy files and directories.",
+   description:"cp creates copies of files or directory trees. Use -r for recursive directory copying.",
+   syntax:["cp [options] source dest","cp -r dir1 dir2"],
+   details:[{flag:"-r",text:"Recursively copy directories."},
+            {flag:"-p",text:"Preserve file attributes and timestamps."},
+            {flag:"-i",text:"Prompt before overwriting."}]},
+  {name:"mv",category:"Files",short:"Move or rename files and directories.",
+   description:"mv relocates a file or directory to a new path, or renames it if the destination is a new name in the same location.",
+   syntax:["mv source dest","mv old.txt new.txt"],
+   details:[{flag:"-i",text:"Prompt before overwriting."},
+            {flag:"-n",text:"Never overwrite existing files."},
+            {flag:"-v",text:"Verbose output showing moves."}]},
+  {name:"rm",category:"Files",short:"Remove files and directories.",
+   description:"rm deletes files. Directories require -r. This is destructive — there is no built-in trash or undo.",
+   syntax:["rm [options] file","rm -rf dir"],
+   details:[{flag:"-r",text:"Recursively delete directories."},
+            {flag:"-f",text:"Force removal without prompts."},
+            {flag:"-i",text:"Prompt before each removal (safer)."}]},
+  {name:"find",category:"Files",short:"Search for files in a directory hierarchy.",
+   description:"find walks a directory tree matching name, size, time, permissions and can execute commands on matches.",
+   syntax:["find [path] [expr]","find /var -name '*.log'","find . -size +100M"],
+   details:[{flag:"-name",text:"Match filename by pattern."},
+            {flag:"-type",text:"Filter by file type (f=file, d=directory)."},
+            {flag:"-exec",text:"Run a command on each match."},
+            {flag:"-mtime",text:"Filter by modification time in days."}]},
+  {name:"grep",category:"Text",short:"Search text using regular expressions.",
+   description:"grep prints lines matching a pattern. It supports regex, recursive search and context lines.",
+   syntax:["grep [options] pattern file","grep -rn 'error' /var/log"],
+   details:[{flag:"-r",text:"Recursively search directories."},
+            {flag:"-n",text:"Show line numbers."},
+            {flag:"-i",text:"Case-insensitive matching."},
+            {flag:"-v",text:"Invert match."}]},
+  {name:"cat",category:"Text",short:"Concatenate and display file content.",
+   description:"cat reads files and prints their contents to stdout. Also used to combine multiple files.",
+   syntax:["cat file","cat a.txt b.txt > joined.txt"],
+   details:[{flag:"-n",text:"Number output lines."},{flag:"-A",text:"Show non-printing characters."}]},
+  {name:"less",category:"Text",short:"Page through file content interactively.",
+   description:"less opens a scrollable viewer for large files. Press / to search, q to quit.",
+   syntax:["less file","ps aux | less"],
+   details:[{flag:"/pattern",text:"Search forward."},{flag:"G",text:"Jump to end of file."},{flag:"q",text:"Quit the pager."}]},
+  {name:"tail",category:"Text",short:"Display the last lines of a file.",
+   description:"tail shows the end of files. With -f it follows new writes — essential for watching logs live.",
+   syntax:["tail -n 50 file","tail -f /var/log/syslog"],
+   details:[{flag:"-f",text:"Follow file as it grows."},{flag:"-n",text:"Show the last N lines."}]},
+  {name:"chmod",category:"Permissions",short:"Change file permission bits.",
+   description:"chmod modifies read/write/execute bits using symbolic (u+x) or octal (755) notation.",
+   syntax:["chmod [mode] file","chmod 755 script.sh","chmod u+x run.sh"],
+   details:[{flag:"755",text:"Owner rwx, group rx, others rx."},
+            {flag:"644",text:"Owner rw, group r, others r."},
+            {flag:"+x",text:"Add execute permission."}]},
+  {name:"chown",category:"Permissions",short:"Change file owner and group.",
+   description:"chown assigns a new owner (and optionally group) to a file or recursive tree.",
+   syntax:["chown user:group file","chown -R www-data:www-data /var/www"],
+   details:[{flag:"-R",text:"Recursively change ownership."},{flag:"user:group",text:"Set owner and group at once."}]},
+  {name:"sudo",category:"Permissions",short:"Execute a command as another user.",
+   description:"sudo runs a command with elevated privileges (typically root), governed by /etc/sudoers.",
+   syntax:["sudo command","sudo -u postgres psql"],
+   details:[{flag:"-u",text:"Run as a specific user."},{flag:"-i",text:"Start an interactive root shell."}]},
+  {name:"ps",category:"Processes",short:"Report a snapshot of running processes.",
+   description:"ps lists active processes. Common form ps aux shows all processes with user, CPU and memory usage.",
+   syntax:["ps aux","ps -ef","ps aux | grep nginx"],
+   details:[{flag:"a",text:"Show processes for all users."},{flag:"u",text:"User-oriented format."},{flag:"x",text:"Include processes without a terminal."}]},
+  {name:"top",category:"Processes",short:"Live view of system processes.",
+   description:"top displays real-time CPU, memory and process statistics. htop is a common enhanced alternative.",
+   syntax:["top","top -u nginx"],
+   details:[{flag:"M",text:"Sort by memory usage."},{flag:"P",text:"Sort by CPU usage."},{flag:"k",text:"Kill a process by PID."}]},
+  {name:"kill",category:"Processes",short:"Send a signal to a process.",
+   description:"kill delivers signals to a process, most commonly SIGTERM (15) to request graceful shutdown.",
+   syntax:["kill PID","kill -9 PID","kill -HUP PID"],
+   details:[{flag:"-15",text:"SIGTERM — request graceful termination."},
+            {flag:"-9",text:"SIGKILL — force immediate termination."},
+            {flag:"-HUP",text:"SIGHUP — often reloads configuration."}]},
+  {name:"systemctl",category:"Processes",short:"Control systemd services and targets.",
+   description:"systemctl manages systemd units — services, sockets, timers, targets. Core to modern Linux administration.",
+   syntax:["systemctl status nginx","systemctl restart nginx","systemctl enable nginx"],
+   details:[{flag:"start/stop",text:"Start or stop a service."},
+            {flag:"status",text:"Show unit state and recent logs."},
+            {flag:"enable",text:"Auto-start at boot."}]},
+  {name:"curl",category:"Network",short:"Transfer data from URLs.",
+   description:"curl performs HTTP/HTTPS, FTP and other protocol requests — used to test APIs and download files.",
+   syntax:["curl https://api.example.com","curl -X POST -d '{}' url"],
+   details:[{flag:"-X",text:"Specify HTTP method."},
+            {flag:"-H",text:"Add a request header."},
+            {flag:"-d",text:"Send a request body."},
+            {flag:"-o",text:"Write output to a file."}]},
+  {name:"ss",category:"Network",short:"Inspect socket statistics.",
+   description:"ss shows network connections and listening ports. It replaces the older netstat.",
+   syntax:["ss -tuln","ss -tulpn"],
+   details:[{flag:"-t",text:"TCP sockets."},{flag:"-u",text:"UDP sockets."},
+            {flag:"-l",text:"Listening sockets only."},{flag:"-p",text:"Show owning process."}]},
+  {name:"ping",category:"Network",short:"Test reachability with ICMP echo.",
+   description:"ping sends ICMP echo requests to test network reachability and measure round-trip time.",
+   syntax:["ping host","ping -c 4 8.8.8.8"],
+   details:[{flag:"-c",text:"Send a fixed count then exit."},{flag:"-i",text:"Interval between packets."}]},
+  {name:"ssh",category:"Network",short:"Open a secure remote shell.",
+   description:"ssh connects to remote hosts over an encrypted channel. Also supports tunneling and key-based auth.",
+   syntax:["ssh user@host","ssh -i key.pem user@ip"],
+   details:[{flag:"-i",text:"Use a specific private key."},
+            {flag:"-L",text:"Local port forwarding (tunnel)."},
+            {flag:"-p",text:"Non-default SSH port."}]},
+  {name:"rsync",category:"Network",short:"Efficient file synchronization.",
+   description:"rsync syncs files locally or over SSH, transferring only changed blocks — ideal for backups.",
+   syntax:["rsync -av src/ user@host:/dest/","rsync -avz --delete src/ dst/"],
+   details:[{flag:"-a",text:"Archive mode (preserve attributes)."},
+            {flag:"-v",text:"Verbose output."},
+            {flag:"-z",text:"Compress during transfer."},
+            {flag:"--delete",text:"Remove files missing at source."}]},
+  {name:"df",category:"Disk",short:"Report filesystem disk usage.",
+   description:"df shows mounted filesystems and their used/free space.",
+   syntax:["df -h","df -hT"],
+   details:[{flag:"-h",text:"Human-readable sizes."},{flag:"-T",text:"Show filesystem type."}]},
+  {name:"du",category:"Disk",short:"Estimate file and directory space usage.",
+   description:"du reports disk usage of files and directories. Combine with sort to find large directories.",
+   syntax:["du -sh *","du -ah /var | sort -h | tail"],
+   details:[{flag:"-s",text:"Summary only."},
+            {flag:"-h",text:"Human-readable sizes."},
+            {flag:"-a",text:"Include files, not just directories."}]},
+  {name:"apt",category:"Packages",short:"Debian/Ubuntu package manager.",
+   description:"apt installs, upgrades and removes Debian packages. apt-get is its script-friendly sibling.",
+   syntax:["apt update","apt install nginx","apt remove nginx"],
+   details:[{flag:"update",text:"Refresh package index."},
+            {flag:"upgrade",text:"Install available upgrades."},
+            {flag:"install",text:"Install a package."}]},
+  {name:"dnf",category:"Packages",short:"Fedora/RHEL package manager.",
+   description:"dnf resolves dependencies and manages RPM packages on Fedora, RHEL, CentOS Stream and derivatives.",
+   syntax:["dnf install nginx","dnf upgrade","dnf search httpd"],
+   details:[{flag:"install",text:"Install a package."},
+            {flag:"upgrade",text:"Upgrade packages."},
+            {flag:"list",text:"List installed/available packages."}]},
+  {name:"tar",category:"Compression",short:"Archive and extract files.",
+   description:"tar bundles files into an archive and can compress with gzip/bzip2/xz.",
+   syntax:["tar -czf out.tar.gz dir/","tar -xzf out.tar.gz"],
+   details:[{flag:"-c",text:"Create archive."},{flag:"-x",text:"Extract archive."},
+            {flag:"-z",text:"Gzip compression."},{flag:"-f",text:"Archive filename."}]},
+  {name:"crontab",category:"Scheduling",short:"Manage scheduled cron jobs.",
+   description:"crontab edits the per-user cron table, running commands on a minute/hour/day schedule.",
+   syntax:["crontab -e","crontab -l"],
+   details:[{flag:"-e",text:"Edit the current user's cron table."},
+            {flag:"-l",text:"List scheduled jobs."},
+            {flag:"*/5 * * * *",text:"Run every five minutes."}]},
+  {name:"journalctl",category:"Logs",short:"Query the systemd journal.",
+   description:"journalctl reads structured systemd logs with filtering by unit, time and priority.",
+   syntax:["journalctl -u nginx","journalctl -f","journalctl --since '1 hour ago'"],
+   details:[{flag:"-u",text:"Filter by systemd unit."},
+            {flag:"-f",text:"Follow new entries live."},
+            {flag:"--since",text:"Time-range filter."}]},
+  {name:"awk",category:"Text",short:"Pattern-scanning and reporting language.",
+   description:"awk processes text line by line, splitting into fields and applying expressions — great for extraction and reports.",
+   syntax:["awk '{print $1}' file","awk -F: '{print $1}' /etc/passwd"],
+   details:[{flag:"-F",text:"Set the field separator."},
+            {flag:"$1",text:"Reference the first field."},
+            {flag:"NR",text:"Current line number."}]},
+  {name:"sed",category:"Text",short:"Stream editor for text transformation.",
+   description:"sed performs substitutions and edits on a stream. The s/// command is the most common.",
+   syntax:["sed 's/old/new/g' file","sed -i 's/a/b/' file"],
+   details:[{flag:"-i",text:"Edit files in place."},
+            {flag:"s///g",text:"Global substitution."},
+            {flag:"-n",text:"Suppress default output."}]}
+];
+
+const CLOUD_COMMANDS = [
+  {name:"Virtual Machine (VM)",category:"Cloud",cloud:true,
+   short:"Isolated compute instance with its own OS.",
+   description:"A Virtual Machine emulates a complete computer including CPU, memory, disk and network. It runs its own guest OS on top of a hypervisor, providing strong isolation between tenants. VMs are the foundational unit of IaaS clouds.",
+   syntax:["Create: cloud provider console / CLI","Lifecycle: provision → boot → run → stop → terminate","Common CLI: aws ec2 run-instances, gcloud compute instances create"],
+   details:[{flag:"vCPU / RAM",text:"Virtualized CPU cores and memory assigned to the instance."},
+            {flag:"vNIC",text:"Virtual network interface attached to a subnet."},
+            {flag:"vDisk",text:"Virtual block storage."},
+            {flag:"Image",text:"Base OS template (AMI, image family)."},
+            {flag:"Snapshot",text:"Point-in-time copy of disk state."}]},
+  {name:"Hypervisor",category:"Cloud",cloud:true,
+   short:"Software layer that runs and isolates VMs.",
+   description:"A hypervisor (Virtual Machine Monitor) creates and manages virtual machines, allocating physical CPU, memory and devices to guests. Type 1 (bare-metal) hypervisors like KVM, Xen and ESXi run directly on hardware; Type 2 (hosted) like VirtualBox run atop a host OS.",
+   syntax:["Type 1: KVM, Xen, VMware ESXi, Hyper-V","Type 2: VirtualBox, VMware Workstation, QEMU","API: libvirt (virsh), cloud-init"],
+   details:[{flag:"vCPU scheduling",text:"Maps guest cores to physical cores."},
+            {flag:"Memory ballooning",text:"Reclaims unused guest memory."},
+            {flag:"vSwitch",text:"Virtual switching between guest NICs."},
+            {flag:"Live migration",text:"Move a running VM to another host."},
+            {flag:"Snapshots",text:"Capture and roll back VM state."}]},
+  {name:"Load Balancer",category:"Cloud",cloud:true,
+   short:"Distributes traffic across healthy backends.",
+   description:"A load balancer fronts a pool of servers and spreads incoming requests using algorithms such as round-robin, least-connections or hashing. It performs health checks and removes unhealthy targets. Cloud LBs scale automatically.",
+   syntax:["Algorithms: round-robin, least-conn, IP hash, weighted","Layers: L4 (TCP/UDP) and L7 (HTTP/HTTPS)","Examples: HAProxy, NGINX, Envoy, AWS ELB"],
+   details:[{flag:"Health check",text:"Periodic probes to detect failing backends."},
+            {flag:"Sticky sessions",text:"Route a client consistently."},
+            {flag:"SSL termination",text:"Offload TLS decryption at the balancer."},
+            {flag:"Auto-scaling",text:"Add/remove backends based on load."},
+            {flag:"Connection draining",text:"Gracefully complete in-flight requests."}]},
+  {name:"Message Broker",category:"Cloud",cloud:true,
+   short:"Asynchronous messaging between services.",
+   description:"A broker decouples producers and consumers via queues or publish/subscribe topics. It buffers messages, guarantees delivery semantics, and enables event-driven architectures. Popular brokers include RabbitMQ, Apache Kafka, AWS SQS/SNS and Google Pub/Sub.",
+   syntax:["Patterns: queue (point-to-point), topic (pub/sub)","Delivery: at-most-once, at-least-once, exactly-once","Examples: RabbitMQ, Kafka, NATS, SQS, Pub/Sub"],
+   details:[{flag:"Producer",text:"Publishes messages to an exchange or topic."},
+            {flag:"Consumer",text:"Subscribes and processes messages."},
+            {flag:"Queue",text:"Buffers messages between producer and consumer."},
+            {flag:"Acknowledgement",text:"Consumer confirms receipt."},
+            {flag:"Dead-letter queue",text:"Parking area for messages that repeatedly fail."},
+            {flag:"Retention",text:"How long messages are stored."}]},
+  {name:"Object Storage",category:"Cloud",cloud:true,
+   short:"Scalable key-value storage for blobs.",
+   description:"Object storage (S3, GCS, Azure Blob) stores arbitrary files as objects in flat buckets, addressed by key. It offers virtually unlimited scalability, versioning and lifecycle policies, and is accessed over HTTP APIs.",
+   syntax:["Buckets and objects: bucket-name/key","APIs: S3 API, GCS JSON API, Azure Blob REST","CLIs: aws s3, gsutil, az storage"],
+   details:[{flag:"Bucket",text:"Container for objects."},
+            {flag:"Object",text:"Blob plus metadata, addressed by key."},
+            {flag:"Versioning",text:"Retain previous versions."},
+            {flag:"Lifecycle",text:"Auto-transition or expire objects by age."},
+            {flag:"Presigned URL",text:"Time-limited access link."}]},
+  {name:"Virtual Network",category:"Cloud",cloud:true,
+   short:"Isolated software-defined networking.",
+   description:"Cloud VPCs/VNets provide logically isolated networks with subnets, routing tables, security groups and NAT gateways. They let you define topology programmatically and connect to on-premises via VPN or dedicated links.",
+   syntax:["VPC / VNet → subnets → route tables","Security: security groups (stateful), NACLs (stateless)","Connectivity: VPN, peering, transit gateway"],
+   details:[{flag:"Subnet",text:"CIDR range in a single availability zone."},
+            {flag:"Route table",text:"Rules directing traffic."},
+            {flag:"Security group",text:"Instance-level allow rules, stateful."},
+            {flag:"NAT gateway",text:"Outbound internet for private subnets."},
+            {flag:"VPC peering",text:"Private connectivity between two VPCs."}]},
+  {name:"Container Orchestrator",category:"Cloud",cloud:true,
+   short:"Schedules and scales containerized workloads.",
+   description:"Orchestrators like Kubernetes manage container lifecycles across a cluster — scheduling pods, restarting failures, scaling replicas, and exposing services. They provide declarative control via manifests and controllers.",
+   syntax:["Resources: Pod, Deployment, Service, Ingress","CLI: kubectl apply -f manifest.yaml","Scaling: HPA based on CPU/memory/custom metrics"],
+   details:[{flag:"Pod",text:"Smallest deployable unit."},
+            {flag:"Deployment",text:"Declares replica count and rolling updates."},
+            {flag:"Service",text:"Stable virtual IP + DNS for pods."},
+            {flag:"Ingress",text:"HTTP(S) routing from outside."},
+            {flag:"HPA",text:"Horizontal Pod Autoscaler scales replicas."},
+            {flag:"ConfigMap / Secret",text:"Inject config and credentials."}]}
+];
+
+/* ============ APP ============ */
+(function(){
+  const ALL = [...LINUX_COMMANDS, ...CLOUD_COMMANDS];
+  const grid = document.getElementById('grid');
+  const filtersEl = document.getElementById('filters');
+  const searchEl = document.getElementById('search');
+  const emptyEl = document.getElementById('empty');
+  const backdrop = document.getElementById('backdrop');
+  const modalBody = document.getElementById('modalBody');
+  const modalClose = document.getElementById('modalClose');
+
+  let activeCategory = 'All';
+  let query = '';
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function buildFilters(){
+    const cats = ['All', ...new Set(ALL.map(c => c.category))];
+    filtersEl.innerHTML = cats.map(cat =>
+      `<button class="filter${cat==='All'?' active':''}" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
+    ).join('');
+    filtersEl.querySelectorAll('.filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        activeCategory = btn.dataset.cat;
+        filtersEl.querySelectorAll('.filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+    });
+  }
+
+  function updateStats(){
+    document.getElementById('statTotal').textContent = ALL.length;
+    document.getElementById('statCats').textContent = new Set(ALL.map(c => c.category)).size;
+    document.getElementById('statCloud').textContent = CLOUD_COMMANDS.length;
+  }
+
+  function render(){
+    const q = query.toLowerCase();
+    const list = ALL.filter(item => {
+      const matchesCat = activeCategory === 'All' || item.category === activeCategory;
+      const hay = (item.name+' '+item.short+' '+item.description+' '+
+        item.details.map(d => d.flag+' '+d.text).join(' ')).toLowerCase();
+      return matchesCat && (q === '' || hay.includes(q));
+    });
+
+    emptyEl.style.display = list.length ? 'none' : 'block';
+
+    grid.innerHTML = list.map(item => {
+      const idx = ALL.indexOf(item);
+      return `<article class="card ${item.cloud?'cloud':''}" data-idx="${idx}">
+        <div class="name"><span class="d">$</span>${escapeHtml(item.name)}</div>
+        <div class="desc">${escapeHtml(item.short)}</div>
+        <span class="tag">${escapeHtml(item.category)}</span>
+      </article>`;
+    }).join('');
+
+    grid.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', () => openModal(ALL[+card.dataset.idx]));
+    });
+  }
+
+  function openModal(item){
+    modalBody.innerHTML = `
+      <h2>${escapeHtml(item.name)}</h2>
+      <div class="meta">Category: ${escapeHtml(item.category)}${item.cloud?' · Cloud Component':''}</div>
+      <p>${escapeHtml(item.description)}</p>
+      <h3>Syntax &amp; Usage</h3>
+      <ul>${item.syntax.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+      <h3>Key Details</h3>
+      <ul class="detail-list">${item.details.map(d =>
+        `<li><strong>${escapeHtml(d.flag)}</strong> — ${escapeHtml(d.text)}</li>`).join('')}</ul>
+    `;
+    backdrop.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(){
+    backdrop.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  modalClose.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+    if (e.key === '/' && document.activeElement !== searchEl){
+      e.preventDefault(); searchEl.focus();
+    }
+  });
+  searchEl.addEventListener('input', e => {
+    query = e.target.value.trim(); render();
+  });
+
+  buildFilters();
+  updateStats();
+  render();
+  document.getElementById('year').textContent = new Date().getFullYear();
+})();
+</script>
 </body>
 </html>
