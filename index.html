@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Linux Command Explorer · Cloud Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+
+  <header class="hero">
+    <div class="logo">
+      <span class="prompt">$</span> linux<span class="accent">::</span>cloud
+      <span class="cursor">_</span>
+    </div>
+    <h1>Linux Command <span class="accent">Explorer</span></h1>
+    <p class="subtitle">Interactive reference for Linux &amp; Cloud Computing components</p>
+
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Search commands, e.g. grep, vm, hypervisor..." autocomplete="off" />
+      <span class="kbd">/</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span id="statTotal">0</span><small>Commands</small></div>
+      <div class="stat"><span id="statCats">0</span><small>Categories</small></div>
+      <div class="stat"><span id="statCloud">0</span><small>Cloud</small></div>
+    </div>
+  </header>
+
+  <main>
+    <nav class="filters" id="filters"></nav>
+    <section class="grid" id="grid"></section>
+    <div class="empty" id="empty" hidden>No commands match your search.</div>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Static · Deployed via GitHub Pages · <span id="year"></span></p>
+  </footer>
+
+  <script src="js/commands.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

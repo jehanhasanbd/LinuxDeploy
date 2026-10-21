@@ -1,0 +1,5 @@
+{
+  "note": "Reference index only. See js/commands.js and js/cloud.js for the full records.",
+  "source": ["js/commands.js", "js/cloud.js"],
+  "categories": ["Files", "Text", "Permissions", "Processes", "Network", "Disk", "Packages", "Compression", "Scheduling", "Logs", "Cloud"]
+}
